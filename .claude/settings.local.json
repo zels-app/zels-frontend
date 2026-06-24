@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\rafae\\\\onedrive\\\\projetos pessoais\\\\zels\\\\zels-frontend\"; Get-ChildItem -Recurse -Name | Where-Object { $_ -notmatch \"node_modules\" -and $_ -notmatch \"\\\\.next\" } | Sort-Object)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(npm run *)",
+      "WebFetch(domain:localhost)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:3001/login\" -UseBasicParsing -MaximumRedirection 5 | Select-Object -ExpandProperty Content | Select-String -Pattern \"Entrar|Dashboard|Fatia|next.svg|To get started\" | ForEach-Object { $_.Line.Trim\\(\\) } | Select-Object -First 20)",
+      "PowerShell(Get-Job *)",
+      "PowerShell(claude plugin *)",
+      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\rafae\\\\onedrive\\\\projetos pessoais\\\\zels\\\\zels-frontend\\\\node_modules\\\\next\\\\package.json\" | ConvertFrom-Json; Write-Output $pkg.version)",
+      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\rafae\\\\onedrive\\\\projetos pessoais\\\\zels\\\\zels-frontend\\\\node_modules\\\\zod\\\\package.json\" | ConvertFrom-Json; Write-Output $pkg.version)"
+    ]
+  }
+}

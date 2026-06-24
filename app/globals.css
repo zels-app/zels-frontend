@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Fontes */
+  --font-sans: var(--font-nunito);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-dm-serif);
+
+  /* Cores do sistema shadcn (mapeadas para as variáveis CSS) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Tokens específicos do Zel's */
+  --color-zels-primary: var(--zels-primary);
+  --color-zels-primary-soft: var(--zels-primary-soft);
+  --color-zels-primary-strong: var(--zels-primary-strong);
+  --color-zels-deep: var(--zels-deep);
+  --color-zels-terracota: var(--zels-terracota);
+  --color-zels-sunken: var(--zels-sunken);
+  --color-zels-text-soft: var(--zels-text-soft);
+  --color-zels-text-faint: var(--zels-text-faint);
+  --color-zels-urgent: var(--zels-urgent);
+  --color-zels-attention: var(--zels-attention);
+  --color-zels-ok: var(--zels-ok);
+
+  /* Border radius do sistema de design */
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 0.875rem;  /* 14px */
+  --radius-full: 9999px;
+
+  /* Charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  /* ── Paleta Zel's ─────────────────────────────────────── */
+  --background: #FAF8F5;
+  --foreground: #3D2B1F;
+
+  --card: #ffffff;
+  --card-foreground: #3D2B1F;
+
+  --popover: #ffffff;
+  --popover-foreground: #3D2B1F;
+
+  --primary: #8BAF8A;
+  --primary-foreground: #2C3E2D;
+
+  --secondary: #F0EDE6;
+  --secondary-foreground: #3D2B1F;
+
+  --muted: #F0EDE6;
+  --muted-foreground: rgba(61, 43, 31, 0.68);
+
+  --accent: rgba(139, 175, 138, 0.15);
+  --accent-foreground: #8BAF8A;
+
+  --destructive: #b8341a;
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(61, 43, 31, 0.10);
+  --input: rgba(61, 43, 31, 0.10);
+  --ring: #8BAF8A;
+
+  /* Tokens semânticos Zel's */
+  --zels-primary: #8BAF8A;
+  --zels-primary-soft: rgba(139, 175, 138, 0.15);
+  --zels-primary-strong: #5F8260;
+  --zels-deep: #2C3E2D;
+  --zels-terracota: #C4846A;
+  --zels-sunken: #F0EDE6;
+  --zels-text-soft: rgba(61, 43, 31, 0.68);
+  --zels-text-faint: rgba(61, 43, 31, 0.42);
+  --zels-urgent: #b8341a;
+  --zels-attention: #a86e13;
+  --zels-ok: #5F8260;
+
+  /* Tokens semânticos de avatar */
+  --zels-avatar-patient:   var(--zels-terracota);
+  --zels-avatar-curator:   var(--zels-primary-strong);
+  --zels-avatar-caregiver: var(--zels-deep);
+  --zels-avatar-family:    #9B5A42;
+
+  /* Charts */
+  --chart-1: #8BAF8A;
+  --chart-2: #a86e13;
+  --chart-3: #b8341a;
+  --chart-4: #F0EDE6;
+  --chart-5: #3D2B1F;
+
+  --radius: 0.75rem;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3D2B1F;
+  --sidebar-primary: #8BAF8A;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F0EDE6;
+  --sidebar-accent-foreground: #3D2B1F;
+  --sidebar-border: rgba(61, 43, 31, 0.10);
+  --sidebar-ring: #8BAF8A;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
