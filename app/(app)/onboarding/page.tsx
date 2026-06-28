@@ -22,12 +22,7 @@ const profileSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
     error: () => ({ message: 'Selecione um gênero' }),
   }),
-  bloodType: z.preprocess(
-    (v) => (v === '' ? undefined : v),
-    z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG'], {
-      error: () => ({ message: 'Selecione um tipo sanguíneo' }),
-    }).optional(),
-  ),
+  bloodType: z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG']).or(z.literal('')).optional(),
   hasDigitalDependency: z.boolean(),
   emergencyNotes: z.string().optional(),
 })
