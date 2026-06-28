@@ -263,7 +263,7 @@ export function ExamCard({ exam }: { exam: Exam }) {
                     <Paperclip size={14} style={{ color: 'var(--zels-text-soft)', flexShrink: 0 }} />
                     <span style={{ color: 'var(--zels-text-soft)', fontSize: '0.8125rem' }}>Arquivo anexado</span>
                     <a
-                      href={'http://localhost:3000/' + exam.fileUrl.replace(/\\/g, '/')}
+                      href={(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000') + '/' + exam.fileUrl.replace(/\\/g, '/')}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ color: 'var(--zels-primary)', fontSize: '0.8125rem', textDecoration: 'underline', textUnderlineOffset: '2px' }}
