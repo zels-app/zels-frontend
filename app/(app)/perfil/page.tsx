@@ -95,7 +95,7 @@ export default function PerfilPage() {
         ...(fullName.trim() && { fullName: fullName.trim() }),
         ...(birthDate && { birthDate }),
         ...(gender && { gender: gender as 'MALE' | 'FEMALE' | 'OTHER' }),
-        bloodType: bloodType || null,
+        ...(bloodType && { bloodType: bloodType as 'A_POS' | 'A_NEG' | 'B_POS' | 'B_NEG' | 'AB_POS' | 'AB_NEG' | 'O_POS' | 'O_NEG' }),
         hasDigitalDependency,
         ...(emergencyNotes.trim() && { emergencyNotes: emergencyNotes.trim() }),
       }
