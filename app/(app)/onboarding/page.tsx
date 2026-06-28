@@ -20,12 +20,12 @@ const profileSchema = z.object({
   fullName: z.string().min(2, 'Nome completo obrigatório'),
   birthDate: z.string().min(1, 'Data de nascimento obrigatória'),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
-    errorMap: () => ({ message: 'Selecione um gênero' }),
+    error: () => ({ message: 'Selecione um gênero' }),
   }),
   bloodType: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.enum(['A_POS', 'A_NEG', 'B_POS', 'B_NEG', 'AB_POS', 'AB_NEG', 'O_POS', 'O_NEG'], {
-      errorMap: () => ({ message: 'Selecione um tipo sanguíneo' }),
+      error: () => ({ message: 'Selecione um tipo sanguíneo' }),
     }).optional(),
   ),
   hasDigitalDependency: z.boolean(),
