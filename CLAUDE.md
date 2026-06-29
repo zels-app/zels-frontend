@@ -50,6 +50,9 @@ Rafael é iniciante em programação. Sempre explique o **porquê** de cada deci
 > - shadcn estilo `base-nova` usa `@base-ui/react` em vez de Radix UI — o componente `form` não existe nesse estilo; usar react-hook-form diretamente
 > - Zod 4: `z.string().email()` está **deprecated** → usar `z.email()` como função de nível superior
 > - `@hookform/resolvers/zod` v5 detecta automaticamente Zod 3 ou 4 — importar normalmente de `@hookform/resolvers/zod`
+> - Zod 4: `errorMap` foi removido dos options de `z.enum()` → usar `error` no lugar (`error: () => ({ message: '...' })`)
+> - Zod 4: `z.preprocess()` não infere o tipo corretamente → substituir por `z.enum([...]).or(z.literal('')).optional()` quando o campo é opcional e o select HTML pode enviar string vazia; tratar a string vazia no submit handler
+> - Zod 4: campos de enum opcionais vindos de `<select>` precisam de cast explícito no submit se o TypeScript reclamar de string genérica: `value as 'VAL_A' | 'VAL_B'`
 
 ---
 
@@ -129,7 +132,7 @@ O cliente `api` (lib/api/client.ts) **nunca chama o backend diretamente**. Todas
 - **Cor de avatar:** SEMPRE usar os tokens `--zels-avatar-*` (nunca hex hardcoded). `ROLE_CONFIG` em `components/ciclo/person-card.tsx` é a fonte de verdade: entradas `ELDERLY`, `CURATOR`, `CAREGIVER`, `FAMILY`, cada uma com `color: 'var(--zels-avatar-*)'`. Avatar do usuário logado usa `ROLE_CONFIG[currentUser.role as keyof typeof ROLE_CONFIG]?.color ?? 'var(--zels-avatar-curator)'`.
 - **Botões primários (shadcn `<Button>`):** sempre adicionar `style={{ color: '#ffffff' }}` — `var(--primary-foreground)` é imprevisível neste projeto e pode renderizar texto escuro. Obrigatório em telas de auth e onboarding; aplicar em qualquer novo `<Button>` com background colorido.
 - **Logout:** `sidebar.tsx` chama `queryClient.clear()` após `POST /api/auth/logout` e antes de `router.push('/login')` — limpa todo o cache do TanStack Query para evitar dados da sessão anterior aparecerem para o próximo usuário.
-- **`bloodType` é opcional no HealthProfile** — o campo pode ser omitido no `POST /health-profile`. No onboarding, a opção "Não sei / Informar depois" envia o body sem o campo. O schema Zod usa `z.preprocess((v) => v === '' ? undefined : v, z.enum([...]).optional())` para converter string vazia em `undefined` antes da validação.
+- **`bloodType` é opcional no HealthProfile** — o campo pode ser omitido no `POST /health-profile`. No onboarding, a opção "Não sei / Informar depois" envia o body sem o campo. O schema Zod usa `z.enum([...]).or(z.literal('')).optional()` (Zod 4 — `z.preprocess` foi removido pois não inferia o tipo corretamente); o submit handler ignora o campo quando o valor é falsy (`...(bloodType && { bloodType })`). Em `perfil/page.tsx` o valor é enviado com cast explícito: `bloodType as 'A_POS' | ...`.
 - **`useSearchParams()` exige `<Suspense>` boundary** — obrigatório em qualquer página que leia parâmetros da URL no Next.js 16. Extrair o componente que usa `useSearchParams` para um componente filho e envolvê-lo em `<Suspense fallback={...}>` no `page.tsx` pai; sem isso o build falha. Exemplo: `redefinir-senha/page.tsx` exporta `ResetPasswordPage` com `<Suspense>`, e `ResetPasswordForm` (filho) faz `useSearchParams()`.
 
 ---
@@ -220,9 +223,9 @@ app/
   globals.css                 — Tokens de design, paleta Zel's, Tailwind v4
   (auth)/
     layout.tsx                — Centra conteúdo na tela (login/cadastro/convite)
-    login/page.tsx            — Formulário de login (react-hook-form + zod); após login verifica GET /health-profile/me → /dashboard se existe, /onboarding se 404; botão muda para "Verificando perfil…" durante a checagem; logo: <ZelsLogo size={72} showTagline /> dentro de <div className="mb-16">
+    login/page.tsx            — Formulário de login (react-hook-form + zod); após login verifica GET /health-profile/me → /dashboard se existe, /onboarding se 404; botão muda para "Verificando perfil…" durante a checagem; logo: <ZelsLogo size={72} showTagline /> dentro de <div className="mb-16">; InviteBanner (sub-componente em Suspense) exibe banner verde quando ?convite=aceito está na URL
     cadastro/page.tsx         — Formulário de cadastro + auto-login; logo: <ZelsLogo size={72} showTagline /> dentro de <div className="mb-16">
-    convite/page.tsx          — Formulário visual (integração backend TODO)
+    convite/page.tsx          — Aceitação de convite por token: GET /api/proxy/invites/:token valida o token e pré-preenche o email (readonly); POST /api/proxy/invites/:token/accept cria a conta; estados tokenStatus ('loading'|'valid'|'invalid'|'expired'|'used') controlam o que é exibido; redireciona para /login?convite=aceito no sucesso; usa Suspense + ConvitePageInner (mesmo padrão de redefinir-senha)
     esqueci-minha-senha/page.tsx — Solicitar redefinição de senha; POST /auth/forgot-password via proxy; sempre mostra tela de sucesso após HTTP 200
     redefinir-senha/page.tsx  — Redefinir senha com token da URL (?token=); POST /auth/reset-password via proxy; Suspense + useSearchParams
   (app)/
@@ -237,7 +240,7 @@ app/
     exames/page.tsx           — Exames: lista com filtro de período, formulário inline de criação
     agenda/page.tsx           — Timeline dos próximos dias: medicamentos, exames, eventos
     emergencia/page.tsx       — Painel de emergência (fundo escuro, read-only)
-    perfil/page.tsx           — Três seções: "Dados pessoais" (nome/apelido/telefone/e-mail read-only → PATCH /users/me), "Segurança" (troca de senha → PATCH /users/me/password), "Perfil de saúde" (fullName, birthDate, gender, bloodType, hasDigitalDependency, emergencyNotes → PATCH /health-profile/:id; birthDate convertido de ISO para YYYY-MM-DD; bloodType vazio enviado como null)
+    perfil/page.tsx           — Três seções: "Dados pessoais" (nome/apelido/telefone/e-mail read-only → PATCH /users/me), "Segurança" (troca de senha → PATCH /users/me/password), "Perfil de saúde" (fullName, birthDate, gender, bloodType, hasDigitalDependency, emergencyNotes → PATCH /health-profile/:id; birthDate convertido de ISO para YYYY-MM-DD; bloodType vazio omitido do payload — não enviado como null)
   api/
     auth/
       login/route.ts          — Proxy → POST /auth/login, seta cookie auth_token
@@ -355,7 +358,7 @@ components/
 | # | Nome | Status |
 |---|------|--------|
 | 0 | Fundação (stack, design tokens, estrutura de rotas) | ✅ Concluída e aprovada |
-| 1 | Autenticação (login, cadastro, convite, JWT cookie) | ✅ Concluída (convite visual-only — backend pendente) |
+| 1 | Autenticação (login, cadastro, convite, JWT cookie) | ✅ Concluída |
 | 2 | Dashboard | ✅ Concluída (atualizada com 4 novos endpoints) |
 | 3 | Medicamentos | ✅ Concluída |
 | 4 | Checklist | ✅ Concluída |
@@ -367,6 +370,7 @@ components/
 | 10 | Ficha de Emergência (impressão) | ✅ Concluída |
 | 11 | Resumo Médico | ✅ Concluída |
 | C | Sistema de Níveis de Acesso (CURATOR/ELDERLY/CAREGIVER/FAMILY) | ✅ Concluída |
+| 12 | Convite por Token (aceitação pelo convidado) | ✅ Concluída em 29/06/2026 |
 
 > **MVP completo ✅** — todas as fatias planejadas estão implementadas.
 
@@ -672,6 +676,34 @@ Padrões adicionados:
 - `z.email()` obrigatório no Zod 4 (não `z.string().email()`)
 - `onCancel?: () => void` mantido como prop opcional sem uso no corpo para não quebrar componentes pai
 - Erros do backend exibidos inline no formulário via `onError` do `useMutation`
+
+### Fatia 12 — Convite por Token (concluída em 29/06/2026)
+
+Arquivos modificados:
+- `app/(auth)/convite/page.tsx` — reescrito com integração real ao backend
+- `app/(auth)/login/page.tsx` — adicionado `InviteBanner` para `?convite=aceito`
+
+**Comportamento da tela `/convite`:**
+- Lê o token via `useSearchParams` dentro de `<Suspense>` (obrigatório no Next.js 16 — mesmo padrão de `redefinir-senha/page.tsx`)
+- `useEffect` chama `GET /api/proxy/invites/:token` ao montar o componente
+- Estado `tokenStatus: 'loading' | 'valid' | 'invalid' | 'expired' | 'used'` controla o que é exibido:
+  - `loading` → "Validando seu convite…"
+  - `valid` → formulário com email pré-preenchido e bloqueado
+  - `used` → "Este convite já foi utilizado."
+  - `expired` → "Este convite expirou. Peça um novo convite ao responsável."
+  - `invalid` com token → "Este link de convite é inválido."
+  - `invalid` sem token → "Nenhum convite encontrado. Verifique o link recebido por e-mail."
+- Detecção de `expired`/`used` por palavras-chave na mensagem do backend (`expir`, `utiliz/usado/used`)
+- Campo email fora do schema Zod (não validado pelo formulário — é display-only)
+- Submit chama `POST /api/proxy/invites/:token/accept` com `{ name, password }`
+- Sucesso redireciona para `/login?convite=aceito`
+
+**Banner de confirmação no login:**
+- Componente `InviteBanner` (sub-componente dentro de `<Suspense fallback={null}>`)
+- Lê `useSearchParams` de forma isolada — `LoginPage` principal não usa `useSearchParams`
+- Renderiza `null` se o parâmetro não estiver presente (sem custo visual)
+- Mensagem: "Conta criada com sucesso! Faça login para acessar o Zel's."
+- Estilo: fundo `rgba(95,130,96,0.12)`, texto `var(--zels-primary-strong)`, borda sálvia sutil
 
 ---
 

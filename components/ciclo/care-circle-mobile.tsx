@@ -352,7 +352,13 @@ export function CareCircleMobile() {
         canView: true,
         canRegister: true,
         createdAt: new Date().toISOString(),
-        user: { id: profile.curatorUserId, name: 'Curador', email: '', role: 'CURATOR' },
+        user: {
+          id: profile.curatorUserId ?? '',
+          name: profile.curatorUser?.name ?? 'Curador',
+          displayName: profile.curatorUser?.displayName ?? null,
+          email: '',
+          role: 'CURATOR' as const,
+        },
       }
       return [curatorEntry, ...safeMembers]
     }

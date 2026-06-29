@@ -12,7 +12,7 @@ export type AccessControl = {
   user: {
     id: string
     name: string
-    displayName?: string
+    displayName?: string | null
     email: string
     role: string
   }

@@ -5,6 +5,11 @@ export type HealthProfile = {
   id: string
   elderlyUserId: string
   curatorUserId?: string
+  curatorUser?: {
+    id: string
+    name: string
+    displayName?: string | null
+  } | null
   fullName: string
   birthDate: string
   gender: 'MALE' | 'FEMALE' | 'OTHER'

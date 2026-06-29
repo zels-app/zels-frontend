@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,6 +11,23 @@ import { ZelsLogo } from '@/components/brand/zels-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
+function InviteBanner() {
+  const searchParams = useSearchParams()
+  if (searchParams.get('convite') !== 'aceito') return null
+  return (
+    <div
+      className="rounded-lg px-4 py-3 text-sm"
+      style={{
+        background: 'rgba(95,130,96,0.12)',
+        color: 'var(--zels-primary-strong)',
+        border: '1px solid rgba(95,130,96,0.25)',
+      }}
+    >
+      Conta criada com sucesso! Faça login para acessar o Zel&apos;s.
+    </div>
+  )
+}
 
 const loginSchema = z.object({
   email: z.email('E-mail inválido'),
@@ -65,6 +82,10 @@ export default function LoginPage() {
             Acesse sua conta para continuar
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <InviteBanner />
+        </Suspense>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="space-y-1.5">
