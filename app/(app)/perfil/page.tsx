@@ -106,6 +106,14 @@ export default function PerfilPage() {
     }
   }
 
+  const roleLabels: Record<string, string> = {
+    ELDERLY: 'Pessoa Cuidada',
+    CURATOR: 'Curador',
+    FAMILY: 'Familiar',
+    CAREGIVER: 'Cuidador',
+    ADMIN: 'Admin',
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
@@ -166,11 +174,18 @@ export default function PerfilPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <PageHeader
-        overline="CONTA"
-        title="Meu perfil"
-        subtitle="Gerencie suas informações pessoais e senha de acesso."
-      />
+      <div>
+        <PageHeader
+          overline="CONTA"
+          title="Meu perfil"
+          subtitle="Gerencie suas informações pessoais e senha de acesso."
+        />
+        {user && (
+          <p style={{ fontSize: '0.8125rem', color: 'var(--zels-primary)', marginTop: '0.5rem' }}>
+            Seu papel: {roleLabels[user.role] ?? user.role}
+          </p>
+        )}
+      </div>
 
       {/* Dados pessoais */}
       <section style={cardStyle}>
@@ -279,6 +294,19 @@ export default function PerfilPage() {
 
       {/* Perfil de saúde */}
       <section style={cardStyle}>
+        {profile?.fullName && (
+          <p style={{
+            fontSize: '0.7rem',
+            fontWeight: 800,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--zels-primary)',
+            fontFamily: 'var(--font-mono)',
+            marginBottom: '0.25rem',
+          }}>
+            {profile.fullName}
+          </p>
+        )}
         <h2 style={sectionTitleStyle}>Perfil de saúde</h2>
 
         {profileLoading ? (
