@@ -3,7 +3,7 @@ import { api } from '@/lib/api/client'
 
 export type HealthProfile = {
   id: string
-  elderlyUserId: string
+  elderlyUserId: string | null
   curatorUserId?: string
   curatorUser?: {
     id: string

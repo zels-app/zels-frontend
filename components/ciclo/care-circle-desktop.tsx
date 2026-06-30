@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, X, History, Clock } from 'lucide-react'
+import { Plus, X, History, Clock, Heart } from 'lucide-react'
 import { useHealthProfile } from '@/lib/api/health-profile'
 import { useCurrentUser } from '@/lib/api/user'
 import { useAccessControl, type AccessControl } from '@/hooks/useAccessControl'
@@ -9,6 +9,7 @@ import { useUpdateAccess } from '@/hooks/useUpdateAccess'
 import { useDeleteAccess } from '@/hooks/useDeleteAccess'
 import { PermissionToggle, getInitials, ROLE_CONFIG } from './person-card'
 import { InviteForm } from './invite-form'
+import { InviteElderlyForm } from './invite-elderly-form'
 import { PageHeader } from '@/components/layout/page-header'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -477,6 +478,7 @@ function CardSkeleton() {
 type DialogState =
   | { type: 'closed' }
   | { type: 'invite' }
+  | { type: 'invite-elderly' }
   | { type: 'edit'; member: AccessControl }
 
 export function CareCircleDesktop() {
@@ -558,6 +560,20 @@ export function CareCircleDesktop() {
             <History size={14} />
             Histórico de acessos
           </button>
+          {isCurator && !profile?.elderlyUserId && (
+            <button type="button" onClick={() => setDialog({ type: 'invite-elderly' })} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', borderRadius: 10,
+              fontSize: '0.8125rem', fontWeight: 600,
+              color: 'var(--zels-primary-strong)',
+              backgroundColor: 'rgba(139,175,138,0.1)',
+              border: '1px solid rgba(139,175,138,0.3)',
+              cursor: 'pointer', transition: 'all 150ms',
+            }}>
+              <Heart size={14} />
+              Vincular a pessoa cuidada
+            </button>
+          )}
           {isCurator && (
             <button type="button" onClick={() => setDialog({ type: 'invite' })} style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -636,6 +652,20 @@ export function CareCircleDesktop() {
           title="Adicionar ao ciclo"
         >
           <InviteForm
+            healthProfileId={profile.id}
+            onSuccess={() => setDialog({ type: 'closed' })}
+            onCancel={() => setDialog({ type: 'closed' })}
+          />
+        </DialogOverlay>
+      )}
+
+      {profile?.id && (
+        <DialogOverlay
+          open={dialog.type === 'invite-elderly'}
+          onClose={() => setDialog({ type: 'closed' })}
+          title="Vincular a pessoa cuidada"
+        >
+          <InviteElderlyForm
             healthProfileId={profile.id}
             onSuccess={() => setDialog({ type: 'closed' })}
             onCancel={() => setDialog({ type: 'closed' })}

@@ -156,7 +156,8 @@ O cliente `api` (lib/api/client.ts) **nunca chama o backend diretamente**. Todas
 - Para exibi-lo na lista, injetar um membro virtual com `useMemo` após construir `safeMembers`
 - Verificar `curatorAlreadyInList` antes de injetar para evitar duplicatas
 - Usar `createdAt: new Date().toISOString()` no objeto virtual para evitar crash em `memberSince()`
-- `HealthProfile` não possui campo `curatorUser` — usar sempre o fallback `{ id, name: 'Curador', email: '' }`
+- `HealthProfile` inclui `curatorUser?: { id, name, displayName } | null` (adicionado em 29/06/2026) — usar `profile.curatorUser?.name ?? 'Curador'` e `profile.curatorUser?.displayName ?? null`; **nunca hardcodar `'Curador'` como nome**
+- `AccessControl.user.displayName` é `string | null` (não apenas `string`) — necessário para receber `null` do curador sintético quando `curatorUser.displayName` é ausente
 
 ### Título dinâmico do dashboard (DashHero)
 - `DashHero` usa `useAlerts(profile?.id)` para decidir entre "está bem" e "pedindo atenção"
@@ -240,7 +241,7 @@ app/
     exames/page.tsx           — Exames: lista com filtro de período, formulário inline de criação
     agenda/page.tsx           — Timeline dos próximos dias: medicamentos, exames, eventos
     emergencia/page.tsx       — Painel de emergência (fundo escuro, read-only)
-    perfil/page.tsx           — Três seções: "Dados pessoais" (nome/apelido/telefone/e-mail read-only → PATCH /users/me), "Segurança" (troca de senha → PATCH /users/me/password), "Perfil de saúde" (fullName, birthDate, gender, bloodType, hasDigitalDependency, emergencyNotes → PATCH /health-profile/:id; birthDate convertido de ISO para YYYY-MM-DD; bloodType vazio omitido do payload — não enviado como null)
+    perfil/page.tsx           — Três seções: "Dados pessoais" (nome/apelido/telefone/e-mail read-only → PATCH /users/me; exibe "Seu papel: X" abaixo do PageHeader via roleLabels + user.role de useCurrentUser()), "Segurança" (troca de senha → PATCH /users/me/password), "Perfil de saúde" (fullName, birthDate, gender, bloodType, hasDigitalDependency, emergencyNotes → PATCH /health-profile/:id; birthDate convertido de ISO para YYYY-MM-DD; bloodType vazio omitido do payload — não enviado como null; profile.fullName exibido como overline antes do título da seção para indicar de quem é o perfil)
   api/
     auth/
       login/route.ts          — Proxy → POST /auth/login, seta cookie auth_token
@@ -266,7 +267,7 @@ lib/
     client.ts                 — Cliente HTTP com credentials: 'include'; API_URL = '/api/proxy'
     exams.ts                  — Tipos: Biomarker { name, value, unit, referenceRange?, status }, ExamExtractedData { biomarkers[], extractedAt }, Exam { …, extractedData: ExamExtractedData | null }, ExamFilters; hooks: useExams, useCreateExam, useUpdateExam (aceita extractedData), useDeleteExam, useExtractExamBiomarkers (POST /exams/:id/extract — retorna ExamExtractedData, NUNCA persiste automaticamente; usuário revisa e confirma)
     user.ts                   — useCurrentUser() → GET /users/me
-    health-profile.ts         — useHealthProfile() → GET /health-profile/me; tipo HealthProfile inclui elderlyUserId e curatorUserId?; useUpdateHealthProfile() → PATCH /health-profile/:id (aceita UpdateHealthProfilePayload; invalida ['health-profile', 'me'])
+    health-profile.ts         — useHealthProfile() → GET /health-profile/me; tipo HealthProfile inclui elderlyUserId, curatorUserId? e curatorUser?: { id, name, displayName } | null (adicionado em 29/06/2026 — retornado pelo backend junto com o perfil); useUpdateHealthProfile() → PATCH /health-profile/:id (aceita UpdateHealthProfilePayload; invalida ['health-profile', 'me'])
     medications.ts            — useMedications(healthProfileId) → GET /medications/:id?isActive=true; Medication inclui approvalStatus?
     medication-logs.ts        — useMedicationLogs(id, enabled) + useCreateMedicationLog(id)
     health-records.ts         — useVitals(healthProfileId) → GET /health-records/:id?type=VITAL&limit=5
@@ -584,7 +585,9 @@ Arquivos:
 - `components/ciclo/care-circle-desktop.tsx`
 - `components/ciclo/person-card.tsx`
 - `components/ciclo/invite-form.tsx`
+- `components/ciclo/invite-elderly-form.tsx`
 - `hooks/useAccessControl.ts`
+- `hooks/useInviteElderly.ts`
 - `hooks/useCreateAccess.ts`
 - `hooks/useUpdateAccess.ts`
 - `hooks/useDeleteAccess.ts`
@@ -665,6 +668,15 @@ Regras do sistema:
 - FAMILY → level2 (canCreate, canPropose; sem showChecklist)
 - ELDERLY em perfil de outro → level3 (somente leitura)
 - Regra de ouro: sempre `getAccessInfo()`, nunca `user.role` direto nos componentes
+
+### Fatia 13 — Convite para pessoa cuidada (frontend, concluída em 29/06/2026)
+
+Arquivos criados/modificados:
+- `hooks/useInviteElderly.ts` — mutation para POST /health-profile/:id/invite-elderly; invalida queryKey ['health-profile']
+- `components/ciclo/invite-elderly-form.tsx` — formulário de convite (email + texto explicativo + estado de sucesso); mesmos estilos do InviteForm
+- `components/ciclo/care-circle-desktop.tsx` — DialogState estendido com 'invite-elderly'; botão "Vincular a pessoa cuidada" (ícone Heart, estilo outline sálvia) visível quando isCurator && !profile?.elderlyUserId; DialogOverlay para InviteElderlyForm
+- `components/ciclo/care-circle-mobile.tsx` — SheetState estendido com 'invite-elderly'; banner condicional com subtítulo; BottomSheet para InviteElderlyForm
+- `lib/api/health-profile.ts` — elderlyUserId alterado de `string` para `string | null`
 
 ### Fatia 7 — Convite por email (concluída)
 
@@ -784,11 +796,26 @@ Arquivos modificados:
   2. Frontend: atualizar hook `useUpdateChecklistItem` em `lib/api/checklists.ts` para incluir esses campos
   3. Frontend: implementar formulário inline de edição no `SortableRow`
 
-### Curador ausente na tela de Ciclo de Cuidados
-- **Sintoma:** o curador não aparece na lista de pessoas do ciclo; subtítulo da tela aparece truncado
-- **Causa provável:** a lista de membros é montada a partir de `GET /access-control/:healthProfileId`, que retorna apenas registros da tabela `AccessControl`. O curador é vinculado ao perfil via `curatorUserId` (campo de `HealthProfile`), não via `AccessControl` — portanto fica de fora
-- **A investigar:** verificar no backend se o endpoint deve incluir o curador sinteticamente, ou se o frontend deve buscar o curador separadamente via `profile.curatorUserId` e injetá-lo na lista
-- **Escopo:** lógica de dados, não relacionado a cores ou design
+### ~~Curador ausente na tela de Ciclo de Cuidados~~ — ✅ Resolvido em 29/06/2026
+- **Solução:** backend atualizado para incluir `curatorUser: { id, name, displayName }` em `GET /health-profile/me`; tipo `HealthProfile` atualizado em `lib/api/health-profile.ts`; `useMemo` em `care-circle-desktop.tsx` e `care-circle-mobile.tsx` usa `profile.curatorUser?.name ?? 'Curador'` e `profile.curatorUser?.displayName ?? null` ao construir o membro sintético
+- **Padrão:** `AccessControl.user.displayName` é `string | null` (não apenas `string`) — aceita `null` quando o curador ainda não definiu apelido
+
+---
+
+## Alterações recentes — sessão 29/06/2026
+
+### lib/api/health-profile.ts
+- Tipo `HealthProfile` atualizado: campo `curatorUser?: { id: string; name: string; displayName?: string | null } | null` adicionado — retornado pelo backend junto com `GET /health-profile/me`
+
+### hooks/useAccessControl.ts
+- `AccessControl.user.displayName` alterado de `string | undefined` para `string | null` — necessário para compatibilidade com o curador sintético (que passa `null` quando o curador não tem apelido)
+
+### components/ciclo/care-circle-desktop.tsx e care-circle-mobile.tsx
+- Curador sintético no `useMemo` agora usa `profile.curatorUser?.name ?? 'Curador'` e `profile.curatorUser?.displayName ?? null` — exibe o nome real do curador em vez de texto genérico
+
+### app/(app)/perfil/page.tsx
+- Adicionado `roleLabels` e exibição de "Seu papel: X" abaixo do `<PageHeader>` (via `user.role` de `useCurrentUser()`)
+- Adicionado `profile.fullName` como overline acima do título "Perfil de saúde" para indicar de quem é o perfil
 
 ---
 

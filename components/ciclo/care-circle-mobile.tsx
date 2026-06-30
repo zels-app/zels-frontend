@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Plus, MoreHorizontal, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreHorizontal, X, Heart } from 'lucide-react'
 import { useHealthProfile } from '@/lib/api/health-profile'
 import { useCurrentUser } from '@/lib/api/user'
 import { useAccessControl, type AccessControl } from '@/hooks/useAccessControl'
@@ -10,6 +10,7 @@ import { useUpdateAccess } from '@/hooks/useUpdateAccess'
 import { useDeleteAccess } from '@/hooks/useDeleteAccess'
 import { PermissionToggle, getInitials, ROLE_CONFIG } from './person-card'
 import { InviteForm } from './invite-form'
+import { InviteElderlyForm } from './invite-elderly-form'
 import { PageHeader } from '@/components/layout/page-header'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -325,6 +326,7 @@ function RowSkeleton() {
 type SheetState =
   | { type: 'closed' }
   | { type: 'invite' }
+  | { type: 'invite-elderly' }
   | { type: 'edit'; member: AccessControl }
 
 export function CareCircleMobile() {
@@ -413,11 +415,34 @@ export function CareCircleMobile() {
         <CircleHeroMobile patientName={profile.fullName} members={allMembers} />
       )}
 
-      {/* Invite banner */}
+      {/* Invite banners */}
+      {isCurator && !profile?.elderlyUserId && (
+        <button type="button" onClick={() => setSheet({ type: 'invite-elderly' })} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', marginTop: 12,
+          padding: '14px 16px',
+          backgroundColor: 'rgba(139,175,138,0.06)',
+          border: '1px solid rgba(139,175,138,0.25)',
+          borderRadius: 12, cursor: 'pointer',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Heart size={16} style={{ color: 'var(--zels-primary-strong)' }} />
+            <div style={{ textAlign: 'left' }}>
+              <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--zels-primary-strong)' }}>
+                Vincular a pessoa cuidada
+              </span>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(61,43,31,0.55)', marginTop: 1 }}>
+                Convide para criar a própria conta
+              </span>
+            </div>
+          </div>
+          <ChevronRight size={16} style={{ color: 'rgba(139,175,138,0.7)' }} />
+        </button>
+      )}
       {isCurator && (
         <button type="button" onClick={() => setSheet({ type: 'invite' })} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', marginTop: 12,
+          width: '100%', marginTop: 8,
           padding: '14px 16px',
           backgroundColor: 'rgba(139,175,138,0.08)',
           border: '1px solid rgba(139,175,138,0.18)',
@@ -507,6 +532,20 @@ export function CareCircleMobile() {
           title="Adicionar ao ciclo"
         >
           <InviteForm
+            healthProfileId={profile.id}
+            onSuccess={() => setSheet({ type: 'closed' })}
+            onCancel={() => setSheet({ type: 'closed' })}
+          />
+        </BottomSheet>
+      )}
+
+      {profile?.id && (
+        <BottomSheet
+          open={sheet.type === 'invite-elderly'}
+          onClose={() => setSheet({ type: 'closed' })}
+          title="Vincular a pessoa cuidada"
+        >
+          <InviteElderlyForm
             healthProfileId={profile.id}
             onSuccess={() => setSheet({ type: 'closed' })}
             onCancel={() => setSheet({ type: 'closed' })}
