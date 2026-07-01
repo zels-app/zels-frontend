@@ -127,6 +127,22 @@ function buildChartData(exams: Exam[], biomarkerName: string): ChartPoint[] {
     .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
 }
 
+function buildDomainForPoints(points: ChartPoint[]): [number, number] {
+  const values = points.map(p => p.value)
+  const ref = points[points.length - 1]?.referenceRange
+  const limits = ref ? parseReferenceRange(ref) : {}
+  if (limits.upper !== undefined) values.push(limits.upper)
+  if (limits.lower !== undefined) values.push(limits.lower)
+  if (values.length === 0) return [0, 1]
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const range = max - min
+  const center = (min + max) / 2
+  const minMargin = Math.max(center * 0.10, 1)
+  const margin = range < minMargin ? minMargin : range * 0.20
+  return [Math.max(0, min - margin), max + margin]
+}
+
 const LINE_COLORS = ['#8BAF8A', '#C4846A', '#6A8FC4', '#C4A86A']
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,6 +288,95 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
             Nenhum dado disponível para este marcador.
           </p>
         </div>
+      ) : hasMultipleUnits ? (
+        <>
+          <p style={{ fontSize: '0.75rem', color: '#C4846A', marginBottom: '12px' }}>
+            ⚠️ Este marcador foi registrado com unidades diferentes entre exames ({unitList.join(' e ')}). Os grupos são exibidos separadamente e não devem ser comparados diretamente.
+          </p>
+          {unitList.map((unit, lineIndex) => {
+            const lineData = unitGroups[unit]
+            const lineColor = LINE_COLORS[lineIndex % LINE_COLORS.length]
+            const unitDomain = buildDomainForPoints(lineData)
+            const unitRef = parseReferenceRange(lineData[lineData.length - 1]?.referenceRange)
+            const lineUnit = lineData[lineData.length - 1]?.unit ?? ''
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const renderLabel = (props: any) => {
+              const { x, y, index } = props
+              const point = lineData[index]
+              if (!point) return null
+              return (
+                <text x={x} y={y - 12} textAnchor="middle" fontSize={11} fontWeight={700}
+                  fill="var(--zels-text-soft)" fontFamily="var(--font-mono)">
+                  {point.value} {point.unit}
+                </text>
+              )
+            }
+            return (
+              <div key={unit} style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.75rem', color: '#8BAF8A', marginBottom: '6px', fontWeight: 600 }}>
+                  Unidade: {unit}
+                </p>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={lineData} margin={{ top: 24, right: 16, left: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
+                      axisLine={false} tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
+                      axisLine={false} tickLine={false}
+                      domain={unitDomain}
+                      tickCount={5}
+                      unit={lineUnit ? ` ${lineUnit}` : ''}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={lineColor}
+                      strokeWidth={2.5}
+                      dot={<CustomDot />}
+                      activeDot={{ r: 7, fill: lineColor, stroke: 'white', strokeWidth: 2 }}
+                      label={renderLabel}
+                    />
+                    {unitRef.upper !== undefined && (
+                      <ReferenceLine
+                        y={unitRef.upper}
+                        stroke="#E05535"
+                        strokeDasharray="6 3"
+                        strokeWidth={1.5}
+                        label={{
+                          value: `Máx: ${unitRef.upper}`,
+                          position: 'insideTopRight',
+                          fontSize: 10,
+                          fill: '#E05535',
+                          fontWeight: 700,
+                        }}
+                      />
+                    )}
+                    {unitRef.lower !== undefined && (
+                      <ReferenceLine
+                        y={unitRef.lower}
+                        stroke="#E05535"
+                        strokeDasharray="6 3"
+                        strokeWidth={1.5}
+                        label={{
+                          value: `Mín: ${unitRef.lower}`,
+                          position: 'insideBottomRight',
+                          fontSize: 10,
+                          fill: '#E05535',
+                          fontWeight: 700,
+                        }}
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )
+          })}
+        </>
       ) : (
         <>
         <ResponsiveContainer width="100%" height={220}>
@@ -353,11 +458,6 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
             )}
           </LineChart>
         </ResponsiveContainer>
-        {hasMultipleUnits && (
-          <p style={{ fontSize: '0.75rem', color: '#C4846A', marginTop: '8px' }}>
-            ⚠️ Este marcador foi registrado com unidades diferentes entre exames ({unitList.join(' e ')}). Os grupos são exibidos separadamente e não devem ser comparados diretamente.
-          </p>
-        )}
         {chartData.length === 1 && (
           <p style={{
             fontSize: '0.75rem', color: 'var(--zels-text-faint)',
