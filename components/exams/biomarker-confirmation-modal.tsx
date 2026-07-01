@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Biomarker, ExamExtractedData } from '@/lib/api/exams'
 
 const STATUS_OPTIONS = ['normal', 'alto', 'baixo', 'atenção'] as const
@@ -46,7 +47,18 @@ export function BiomarkerConfirmationModal({
   }
 
   function handleConfirm() {
-    const valid = biomarkers.filter(b => b.name.trim() && b.unit.trim())
+    const valid = biomarkers.filter(b => (b.name ?? '').trim() && (b.unit ?? '').trim())
+    const discarded = biomarkers.length - valid.length
+
+    if (valid.length === 0) {
+      toast.error('Nenhum marcador válido para salvar. Verifique se os campos Nome e Unidade estão preenchidos.')
+      return
+    }
+
+    if (discarded > 0) {
+      toast.warning(`${discarded} marcador(es) sem nome ou unidade foram ignorados.`)
+    }
+
     onConfirm({ biomarkers: valid, extractedAt: suggestion.extractedAt })
   }
 
