@@ -193,14 +193,13 @@ export function DashHero({ isSelf }: { isSelf: boolean }) {
             color: '#3D2B1F',
             marginTop: '0.1em',
           }}>
-            está{' '}
             {alertCount > 0 ? (
               <span style={{ color: '#B8341A', fontStyle: 'italic' }}>
-                pedindo atenção
+                precisa de atenção
               </span>
             ) : (
               <span style={{ color: '#5F8260', fontStyle: 'italic' }}>
-                está bem
+                está acompanhado
               </span>
             )}
           </h1>
@@ -260,6 +259,40 @@ export function DashHero({ isSelf }: { isSelf: boolean }) {
               sub={hr?.unit ?? 'bpm'}
             />
           </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '6px',
+          padding: '6px 2px 2px',
+        }}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ color: '#3D2B1F', opacity: 0.35, marginTop: '2px', flexShrink: 0 }}
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span style={{
+            fontSize: '0.625rem',
+            color: '#3D2B1F',
+            opacity: 0.4,
+            lineHeight: 1.5,
+          }}>
+            O zel&apos;s exibe os registros inseridos pelo ciclo de cuidados. Não interpreta nem emite alertas sobre sinais vitais.
+          </span>
         </div>
 
         {/* Banner de emergência */}
