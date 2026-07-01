@@ -127,6 +127,8 @@ function buildChartData(exams: Exam[], biomarkerName: string): ChartPoint[] {
     .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
 }
 
+const LINE_COLORS = ['#8BAF8A', '#C4846A', '#6A8FC4', '#C4A86A']
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomDot(props: any) {
   const { cx, cy, payload } = props as { cx: number; cy: number; payload: ChartPoint }
@@ -176,6 +178,19 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
     [exams, selected]
   )
 
+  const unitGroups = useMemo(() => {
+    const groups: Record<string, ChartPoint[]> = {}
+    chartData.forEach(point => {
+      const key = point.unit || 'sem unidade'
+      if (!groups[key]) groups[key] = []
+      groups[key].push(point)
+    })
+    return groups
+  }, [chartData])
+
+  const unitList = Object.keys(unitGroups)
+  const hasMultipleUnits = unitList.length > 1
+
   if (biomarkerNames.length === 0) return null
 
   // Usa o intervalo de referência do registro mais recente do marcador selecionado
@@ -204,27 +219,7 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
     ] as const
   }, [chartData, refLimits])
 
-  const currentUnit = chartData[0]?.unit ?? ''
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function CustomLabel(props: any) {
-    const { x, y, index } = props as { x: number; y: number; index: number }
-    const point = chartData[index]
-    if (!point) return null
-    return (
-      <text
-        x={x}
-        y={y - 12}
-        textAnchor="middle"
-        fontSize={11}
-        fontWeight={700}
-        fill="var(--zels-text-soft)"
-        fontFamily="var(--font-mono)"
-      >
-        {point.value} {point.unit}
-      </text>
-    )
-  }
+  const currentUnit = chartData[chartData.length - 1]?.unit ?? ''
 
   return (
     <div style={{
@@ -295,15 +290,37 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
               unit={currentUnit ? ` ${currentUnit}` : ''}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="var(--zels-primary)"
-              strokeWidth={2.5}
-              dot={<CustomDot />}
-              activeDot={{ r: 7, fill: 'var(--zels-primary)', stroke: 'white', strokeWidth: 2 }}
-              label={<CustomLabel />}
-            />
+            {unitList.map((unit, lineIndex) => {
+              const lineData = unitGroups[unit]
+              const lineColor = LINE_COLORS[lineIndex % LINE_COLORS.length]
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const renderLabel = (props: any) => {
+                const { x, y, index } = props
+                const point = lineData[index]
+                if (!point) return null
+                return (
+                  <text x={x} y={y - 12} textAnchor="middle" fontSize={11} fontWeight={700}
+                    fill="var(--zels-text-soft)" fontFamily="var(--font-mono)">
+                    {point.value} {point.unit}
+                  </text>
+                )
+              }
+              return (
+                <Line
+                  key={unit}
+                  type="monotone"
+                  data={lineData}
+                  dataKey="value"
+                  stroke={lineColor}
+                  strokeWidth={2.5}
+                  name={unit}
+                  connectNulls={false}
+                  dot={<CustomDot />}
+                  activeDot={{ r: 7, fill: lineColor, stroke: 'white', strokeWidth: 2 }}
+                  label={renderLabel}
+                />
+              )
+            })}
             {refLimits.upper !== undefined && (
               <ReferenceLine
                 y={refLimits.upper}
@@ -336,6 +353,11 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
             )}
           </LineChart>
         </ResponsiveContainer>
+        {hasMultipleUnits && (
+          <p style={{ fontSize: '0.75rem', color: '#C4846A', marginTop: '8px' }}>
+            ⚠️ Este marcador foi registrado com unidades diferentes entre exames ({unitList.join(' e ')}). Os grupos são exibidos separadamente e não devem ser comparados diretamente.
+          </p>
+        )}
         {chartData.length === 1 && (
           <p style={{
             fontSize: '0.75rem', color: 'var(--zels-text-faint)',
