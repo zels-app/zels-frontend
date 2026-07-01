@@ -213,30 +213,6 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
   const latestRef = chartData[chartData.length - 1]?.referenceRange
   const refLimits = latestRef ? parseReferenceRange(latestRef) : {}
 
-  const yDomain = useMemo(() => {
-    const allValues: number[] = chartData.map(p => p.value)
-    if (refLimits.upper !== undefined) allValues.push(refLimits.upper)
-    if (refLimits.lower !== undefined) allValues.push(refLimits.lower)
-    if (allValues.length === 0) return ['auto', 'auto'] as const
-
-    const min = Math.min(...allValues)
-    const max = Math.max(...allValues)
-    const range = max - min
-
-    // Margem mínima: 10% do valor central ou 1 unidade, o que for maior
-    // Isso evita ticks microscópicos quando range é zero (único ponto sem referência)
-    const center = (min + max) / 2
-    const minMargin = Math.max(center * 0.10, 1)
-    const margin = range < minMargin ? minMargin : range * 0.20
-
-    return [
-      Math.max(0, min - margin),
-      max + margin,
-    ] as const
-  }, [chartData, refLimits])
-
-  const currentUnit = chartData[chartData.length - 1]?.unit ?? ''
-
   return (
     <div style={{
       background: 'var(--card)', borderRadius: '16px',
@@ -298,7 +274,6 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
             const lineColor = LINE_COLORS[lineIndex % LINE_COLORS.length]
             const unitDomain = buildDomainForPoints(lineData)
             const unitRef = parseReferenceRange(lineData[lineData.length - 1]?.referenceRange)
-            const lineUnit = lineData[lineData.length - 1]?.unit ?? ''
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const renderLabel = (props: any) => {
               const { x, y, index } = props
@@ -324,13 +299,7 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
                       tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
                       axisLine={false} tickLine={false}
                     />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
-                      axisLine={false} tickLine={false}
-                      domain={unitDomain}
-                      tickCount={5}
-                      unit={lineUnit ? ` ${lineUnit}` : ''}
-                    />
+                    <YAxis hide domain={unitDomain} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"
@@ -387,13 +356,7 @@ export function BiomarkerHistoryChart({ exams }: { exams: Exam[] }) {
               tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
               axisLine={false} tickLine={false}
             />
-            <YAxis
-              tick={{ fontSize: 11, fill: 'var(--zels-text-faint)' }}
-              axisLine={false} tickLine={false}
-              domain={yDomain}
-              tickCount={5}
-              unit={currentUnit ? ` ${currentUnit}` : ''}
-            />
+            <YAxis hide domain={buildDomainForPoints(chartData)} />
             <Tooltip content={<CustomTooltip />} />
             {unitList.map((unit, lineIndex) => {
               const lineData = unitGroups[unit]
