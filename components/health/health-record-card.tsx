@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BookOpen, AlertCircle, Activity, CalendarDays, FileText, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type HealthRecord, type HealthRecordType, useDeleteHealthRecord } from '@/lib/api/health-records'
@@ -126,6 +126,15 @@ export function HealthRecordCard({ record }: { record: HealthRecord }) {
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [timeLabel, setTimeLabel] = useState<string>('')
+
+  useEffect(() => {
+    setTimeLabel(relativeTime(record.createdAt))
+    const interval = setInterval(() => {
+      setTimeLabel(relativeTime(record.createdAt))
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [record.createdAt])
 
   const { mutate: deleteRecord, isPending: isDeleting } = useDeleteHealthRecord()
 
@@ -172,7 +181,7 @@ export function HealthRecordCard({ record }: { record: HealthRecord }) {
 
         <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
           <span className="font-mono text-xs text-zels-text-faint">
-            {relativeTime(record.createdAt)}
+            {timeLabel}
           </span>
           {expanded ? (
             <ChevronUp size={14} className="text-zels-text-faint" />

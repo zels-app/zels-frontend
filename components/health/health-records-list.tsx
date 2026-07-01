@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useHealthProfile } from '@/lib/api/health-profile'
@@ -90,7 +90,7 @@ export function HealthRecordsList() {
   const [showForm, setShowForm] = useState(false)
 
   const { data: profile } = useHealthProfile()
-  const { from, to } = periodDates(period)
+  const { from, to } = useMemo(() => periodDates(period), [period])
 
   const { data, isLoading, isError } = useHealthRecords(profile?.id, {
     type: activeType === 'ALL' ? undefined : activeType,
