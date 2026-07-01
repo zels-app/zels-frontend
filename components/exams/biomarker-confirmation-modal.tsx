@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Biomarker, ExamExtractedData } from '@/lib/api/exams'
@@ -28,6 +28,7 @@ export function BiomarkerConfirmationModal({
   isSaving,
 }: Props) {
   const [biomarkers, setBiomarkers] = useState<Biomarker[]>(suggestion.biomarkers)
+  const listEndRef = useRef<HTMLDivElement>(null)
 
   function updateBiomarker(index: number, field: keyof Biomarker, value: string | number) {
     setBiomarkers(prev =>
@@ -44,6 +45,7 @@ export function BiomarkerConfirmationModal({
       ...prev,
       { name: '', value: 0, unit: '', status: 'normal' },
     ])
+    setTimeout(() => listEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }
 
   function handleConfirm() {
@@ -158,7 +160,7 @@ export function BiomarkerConfirmationModal({
                     </label>
                     <input
                       type="text"
-                      value={b.name}
+                      value={b.name ?? ''}
                       onChange={e => updateBiomarker(i, 'name', e.target.value)}
                       className={fieldClass}
                       placeholder="Ex: Colesterol Total"
@@ -208,6 +210,7 @@ export function BiomarkerConfirmationModal({
                 </div>
               </div>
             ))}
+            <div ref={listEndRef} />
           </div>
         </div>
 
