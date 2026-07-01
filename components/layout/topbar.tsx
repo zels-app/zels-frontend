@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu } from 'lucide-react'
 import { useCurrentUser } from '@/lib/api/user'
@@ -20,11 +21,15 @@ interface TopbarProps {
 export function Topbar({ onMenuClick }: TopbarProps) {
   const { data: user } = useCurrentUser()
 
-  const today = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  const [dateLabel, setDateLabel] = useState<string>('')
+
+  useEffect(() => {
+    setDateLabel(new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }))
+  }, [])
 
   return (
     <header className="sticky top-0 z-30 h-14 px-4 md:px-6 flex items-center gap-3 border-b border-border bg-card shrink-0">
@@ -38,7 +43,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
       <ZelsSymbol size={32} className="text-zels-primary md:hidden" />
 
-      <p className="hidden md:block text-sm text-zels-text-soft capitalize">{today}</p>
+      <p className="hidden md:block text-sm text-zels-text-soft capitalize">{dateLabel}</p>
 
       {user && (
         <Link
