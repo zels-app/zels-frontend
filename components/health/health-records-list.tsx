@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useHealthProfile } from '@/lib/api/health-profile'
@@ -103,6 +103,12 @@ export function HealthRecordsList() {
   const total = data?.total ?? 0
   const hasMore = records.length < total
 
+  const [groups, setGroups] = useState<{ label: string; records: HealthRecord[] }[]>([])
+
+  useEffect(() => {
+    setGroups(groupByDate(records))
+  }, [records])
+
   const filterChipClass = (active: boolean) =>
     cn(
       'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
@@ -195,7 +201,7 @@ export function HealthRecordsList() {
       {/* Lista agrupada por data */}
       {!isLoading && !isError && records.length > 0 && (
         <div className="space-y-6">
-          {groupByDate(records).map(group => (
+          {groups.map(group => (
             <div key={group.label} className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-zels-text-faint">
                 {group.label}
