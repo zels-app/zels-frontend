@@ -121,6 +121,45 @@ O cliente `api` (lib/api/client.ts) **nunca chama o backend diretamente**. Todas
 
 ---
 
+## Rotas de autenticação
+
+Todas ficam no grupo `app/(auth)/` — os parênteses são convenção do App Router para agrupar layouts sem afetar a URL.
+
+| URL | Arquivo | Descrição |
+|-----|---------|-----------|
+| `/cadastro` | `app/(auth)/cadastro/page.tsx` | Criação de conta padrão; redireciona para `/onboarding` após registro |
+| `/login` | `app/(auth)/login/page.tsx` | Login; redireciona para `/dashboard` ou `/onboarding` conforme cookie `has_profile` |
+| `/convite` | `app/(auth)/convite/page.tsx` | Criação de conta via convite com token (FAMILY, CAREGIVER ou ELDERLY); redireciona para `/login?convite=aceito` |
+| `/esqueci-minha-senha` | `app/(auth)/esqueci-minha-senha/page.tsx` | Solicita link de redefinição de senha |
+| `/redefinir-senha` | `app/(auth)/redefinir-senha/page.tsx` | Redefine senha com `?token=` da URL |
+
+> **`/onboarding` NÃO é rota de cadastro.** Fica em `app/(app)/onboarding/page.tsx` e é o fluxo pós-login de criação do HealthProfile — acessível apenas a usuários já autenticados que ainda não têm o cookie `has_profile`. O `proxy.ts` redireciona automaticamente para lá quando `auth_token` existe mas `has_profile` não.
+
+> **Implicação para o site institucional:** os botões "Criar conta gratuita" e "Entrar" do site `www.zels.com.br` apontam para `https://app.zels.com.br/cadastro` e `https://app.zels.com.br/login`. Se essas rotas mudarem de caminho no futuro, os links do site institucional (repositório separado `zels-app/zels-site`) precisam ser atualizados manualmente — não há nenhum link simbólico ou import entre os dois projetos.
+
+---
+
+## Site institucional (zels.com.br)
+
+Projeto separado, fora deste repositório. Documentado aqui apenas para registro de dependências de URL.
+
+| Campo | Valor |
+|-------|-------|
+| Repositório | `zels-app/zels-site` (público no GitHub) |
+| Hospedagem | Vercel |
+| Domínio | `www.zels.com.br` (com redirecionamento automático de `zels.com.br` → `www.zels.com.br`) |
+| Arquivo fonte | `zels-website.html` (mantido fora deste repo, editado em sessões de planejamento) |
+
+**Links do site que dependem das rotas deste frontend:**
+
+| Botão no site | Destino |
+|---------------|---------|
+| "Começar a cuidar" | `https://app.zels.com.br/cadastro` |
+| "Criar conta gratuita" | `https://app.zels.com.br/cadastro` |
+| "Entrar" (menu) | `https://app.zels.com.br/login` |
+
+---
+
 ## Convenções de código
 
 - **Textos visíveis na UI:** português (pt-BR)
@@ -897,6 +936,67 @@ Texto dentro dele: sempre `#ffffff` ou `rgba(250,248,245,X)` — nunca café.
 - **Seção "Doses de hoje"**: exibe `X/Y · Z% hoje` com cor dinâmica — verde (`c.primary`) = 100%, âmbar (`c.warn`) = ≥75%, terracota (`c.urgent`) = abaixo de 75%
 - **Arquivo:** `components/medications/meds-desktop.tsx`
 - **Atenção:** `fromDate` agora usa `days30[0]` (30 dias atrás) para que `logsByMedId` cubra ambas as janelas; o heatmap e `PrescriptionsList` continuam recebendo `days` (7 dias)
+
+---
+
+## Fatia 13 — Convite para vincular pessoa cuidada (29/06/2026)
+
+### O que foi implementado
+- `lib/api/health-profile.ts`: `elderlyUserId` corrigido de `string` para `string | null`
+- Novo hook: `hooks/useInviteElderly.ts` — mutation para `POST /health-profile/:id/invite-elderly`
+- Novo componente: `components/ciclo/invite-elderly-form.tsx` — formulário de convite com validação, estados de erro e sucesso
+- `components/ciclo/care-circle-desktop.tsx`: novo tipo `'invite-elderly'` no DialogState, botão "Vincular a pessoa cuidada" com ícone Heart
+- `components/ciclo/care-circle-mobile.tsx`: novo tipo `'invite-elderly'` no SheetState, banner equivalente
+
+### Regras de exibição
+- Botão visível SOMENTE quando: `isCurator === true` E `profile?.elderlyUserId` é null
+- Quando `elderlyUserId` estiver preenchido, o botão desaparece automaticamente
+- Erros 400 do backend são exibidos diretamente no formulário (mensagens já são amigáveis)
+
+### Padrão visual
+- Segue exatamente o mesmo padrão do InviteForm existente
+- Ícone: Heart (lucide-react)
+- Estilo do botão: outline sálvia (distinto do botão "Convidar pessoa" que é filled)
+
+---
+
+## Lições aprendidas em produção (01/07/2026)
+
+### Hydration Mismatch (React erro #418)
+
+- `new Date()` chamado diretamente no corpo de componentes SSR causa hydration mismatch — servidor (UTC) e navegador (UTC-3) geram strings diferentes. Solução: usar `useState('')` + `useEffect` para calcular no cliente.
+- Componentes afetados e corrigidos: `topbar.tsx` (data no header), `health-record-card.tsx` (relativeTime), `health-records-list.tsx` (groupByDate e periodDates).
+- Padrão seguro para data atual:
+  ```typescript
+  const [label, setLabel] = useState('')
+  useEffect(() => {
+    setLabel(new Date().toLocaleDateString('pt-BR', { ... }))
+  }, [])
+  ```
+- `periodDates()` sem `useMemo` causa refetch desnecessário no TanStack Query — sempre memoizar funções que retornam objetos usados como queryKey ou passados como parâmetro de hook.
+
+### Biomarker Confirmation Modal
+
+- Campos vindos da IA podem ser `null` mesmo tipados como `string` — sempre usar `?? ''` antes de `.trim()`.
+- Padrão seguro: `(b.name ?? '').trim()` em vez de `b.name.trim()`.
+- Inputs controlados: `value={b.name ?? ''}` — nunca passar `null` para `value` de input React.
+- Scroll automático ao adicionar item: `useRef` + `setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth' }), 50)`.
+
+### Gráfico de biomarcadores (biomarker-history-chart.tsx)
+
+- Quando múltiplas unidades existem para um mesmo marcador, renderizar um `<LineChart>` separado por unidade em vez de misturar no mesmo eixo Y.
+- `<YAxis hide domain={buildDomainForPoints(points)} />` — calcular domínio por grupo de pontos, não sobre todos os pontos juntos.
+- O ponto de referência para o domínio deve usar o último ponto (`chartData[chartData.length - 1]`), não o primeiro.
+
+### Hook useVitalsLatest
+
+- O backend retorna `{ healthProfileId, vitals: { heart_rate, blood_pressure, ... } }` — com uma camada `vitals` extra.
+- O hook deve desempacotar: `.then(res => res.vitals)` no `queryFn` para expor `LatestVitals` diretamente.
+- A tabela de endpoints em `../CLAUDE.md` documenta a shape simplificada — sempre verificar o shape real com o backend quando houver dúvida.
+
+### Deploy
+
+- Claude Code executa `git add`, `git commit` e `git push` diretamente — nunca pedir para Rafael rodar manualmente.
 
 ---
 
