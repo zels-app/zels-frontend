@@ -16,13 +16,18 @@ export type LatestVitals = {
   blood_glucose?: VitalReading
 }
 
+type VitalsLatestResponse = {
+  healthProfileId: string
+  vitals: LatestVitals
+}
+
 export function useVitalsLatest(healthProfileId: string | undefined) {
   return useQuery({
     queryKey: ['vitals', 'latest', healthProfileId],
     queryFn: () =>
-      api.get<LatestVitals>(
+      api.get<VitalsLatestResponse>(
         `/health-records/vitals/latest?healthProfileId=${healthProfileId}`
-      ),
+      ).then(res => res.vitals),
     enabled: !!healthProfileId,
   })
 }
