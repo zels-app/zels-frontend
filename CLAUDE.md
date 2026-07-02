@@ -825,6 +825,24 @@ Arquivos modificados:
 
 ---
 
+## Decisões de produto — componentes do dashboard
+
+### `components/dashboard/dash-hero.tsx` — textos do título hero (01/07/2026)
+
+- **Sem alertas:** `"O dia de [Nome]"` + `"está acompanhado"` (verde itálico, `#5F8260`)
+- **Com alertas:** `"O dia de [Nome]"` + `"precisa de atenção"` (vermelho itálico, `#B8341A`)
+- **ATENÇÃO:** o título é formado por dois `<h1>` separados — o primeiro contém `"O dia de [Nome]"` e o segundo contém **apenas** a parte condicional itálica. Nunca adicionar texto hardcoded antes do bloco condicional ou o texto irá duplicar (ex: `"está está acompanhado"`).
+- `alertCount` considera apenas `level === 'urgent'` e `level === 'warning'` — alertas `'info'` não ativam o estado de atenção.
+
+### `components/dashboard/dash-hero.tsx` — disclaimer de sinais vitais (01/07/2026)
+
+- Existe um bloco de texto discreto entre o card de métricas verde (`#2C3E2D`) e o botão "Ficha rápida de emergência".
+- Texto: *"O zel's exibe os registros inseridos pelo ciclo de cuidados. Não interpreta nem emite alertas sobre sinais vitais."*
+- Estilo: `fontSize: '0.625rem'`, `opacity: 0.4`, ícone de info SVG inline à esquerda (11×11px, `stroke="currentColor"`).
+- Propósito: deixar claro para o usuário que os valores exibidos são apenas registros — o sistema não faz diagnóstico nem monitora limites críticos automaticamente.
+
+---
+
 ## Pendências conhecidas
 
 ### Botão "editar" no Template do Checklist
