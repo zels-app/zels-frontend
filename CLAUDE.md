@@ -507,6 +507,13 @@ Arquivos:
 - scheduledISO = dose.scheduledAt ?? buildScheduledAt(dose.scheduledTime)
 - Limite definido: >= 30min conta como tomada atrasada (exatos 30min incluídos)
 
+**Frequência "Personalizada" — campo "A cada quantos dias?" (02/07/2026, testado em produção):**
+- `hooks/useMedications.ts`: campo `intervalDays?: number` adicionado a `Medication` e `MedicationBody`
+- `prescription-dialog.tsx`: campo "A cada quantos dias? *" renderizado condicionalmente (`{frequency === 'CUSTOM' && (...)}`), logo abaixo do grid Dosagem/Frequência; `watch('frequency')` adicionado ao `useForm()` para reatividade em tempo real (antes só existiam `register`/`handleSubmit`/`reset`/`formState`)
+- Schema Zod: `intervalDays: z.coerce.number().int().min(1).optional()` + `.refine()` no nível do objeto, tornando o campo obrigatório apenas quando `frequency === 'CUSTOM'`
+- `reset()` do modo edição inclui `intervalDays: medication.intervalDays ?? undefined` — garante que o valor apareça ao reabrir uma prescrição existente
+- **Padrão a seguir em formulários futuros:** `z.coerce.number()` combinado com `.refine()` faz o Zod gerar tipo de entrada (`unknown`) diferente do tipo de saída (`number`) — quebra `useForm<FormValues>` com um único genérico (o `zodResolver` deixa de bater com o `SubmitHandler`). Sempre que houver `z.coerce` + `.refine()` condicional, separar `FormInput = z.input<typeof schema>` de `FormValues = z.output<typeof schema>` e usar `useForm<FormInput, unknown, FormValues>(...)`
+
 ### Fatia 4 — notas de implementação
 
 Arquivos:
