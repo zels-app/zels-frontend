@@ -23,16 +23,23 @@ const c = {
   urgent: '#b8341a',
 }
 
-const prescriptionSchema = z.object({
-  name: z.string().min(1, 'Campo obrigatório'),
-  dosage: z.string().min(1, 'Campo obrigatório'),
-  instructions: z.string().optional(),
-  frequency: z.enum(['DAILY', 'WEEKLY', 'CUSTOM']),
-  startDate: z.string().min(1, 'Campo obrigatório'),
-  endDate: z.string().optional(),
-})
+const prescriptionSchema = z
+  .object({
+    name: z.string().min(1, 'Campo obrigatório'),
+    dosage: z.string().min(1, 'Campo obrigatório'),
+    instructions: z.string().optional(),
+    frequency: z.enum(['DAILY', 'WEEKLY', 'CUSTOM']),
+    intervalDays: z.coerce.number().int().min(1).optional(),
+    startDate: z.string().min(1, 'Campo obrigatório'),
+    endDate: z.string().optional(),
+  })
+  .refine(
+    (data) => data.frequency !== 'CUSTOM' || (data.intervalDays && data.intervalDays > 0),
+    { message: 'Informe o intervalo em dias', path: ['intervalDays'] }
+  )
 
-type FormValues = z.infer<typeof prescriptionSchema>
+type FormInput = z.input<typeof prescriptionSchema>
+type FormValues = z.output<typeof prescriptionSchema>
 
 export function PrescriptionDialog({
   open,
@@ -63,11 +70,14 @@ export function PrescriptionDialog({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<FormValues>({
+  } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(prescriptionSchema),
     defaultValues: { frequency: 'DAILY' },
   })
+
+  const frequency = watch('frequency')
 
   useEffect(() => {
     if (medication) {
@@ -76,12 +86,13 @@ export function PrescriptionDialog({
         dosage: medication.dosage,
         instructions: medication.instructions ?? '',
         frequency: medication.frequency,
+        intervalDays: medication.intervalDays ?? undefined,
         startDate: medication.startDate.slice(0, 10),
         endDate: medication.endDate?.slice(0, 10) ?? '',
       })
       setScheduleItems(medication.schedule.length > 0 ? medication.schedule : [''])
     } else {
-      reset({ name: initialName ?? '', dosage: initialDosage ?? '', instructions: '', frequency: 'DAILY', startDate: '', endDate: '' })
+      reset({ name: initialName ?? '', dosage: initialDosage ?? '', instructions: '', frequency: 'DAILY', intervalDays: undefined, startDate: '', endDate: '' })
       setScheduleItems([''])
     }
   }, [medication, initialName, initialDosage, reset])
@@ -196,6 +207,24 @@ export function PrescriptionDialog({
               </select>
             </div>
           </div>
+
+          {frequency === 'CUSTOM' && (
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 500, color: c.inkSoft, display: 'block', marginBottom: 4 }}>
+                A cada quantos dias? *
+              </label>
+              <input
+                type="number"
+                min={1}
+                {...register('intervalDays')}
+                placeholder="Ex: 3"
+                style={inputStyle}
+              />
+              {errors.intervalDays && (
+                <p style={{ fontSize: '0.75rem', color: c.urgent, marginTop: 4 }}>{errors.intervalDays.message}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 500, color: c.inkSoft, display: 'block', marginBottom: 4 }}>Instruções</label>

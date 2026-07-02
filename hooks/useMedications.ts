@@ -12,6 +12,7 @@ export type Medication = {
   instructions?: string
   frequency: MedicationFrequency
   schedule: string[]
+  intervalDays?: number
   startDate: string
   endDate?: string
   isActive: boolean
@@ -43,6 +44,7 @@ export type MedicationBody = {
   instructions?: string
   frequency: MedicationFrequency
   schedule: string[]
+  intervalDays?: number
   startDate: string
   endDate?: string
 }
